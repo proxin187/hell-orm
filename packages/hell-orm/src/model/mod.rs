@@ -1,30 +1,43 @@
+use crate::error::Error;
+
+use rusqlite::Connection;
 
 
 pub trait Model {
-    const CREATE: &'static str;
+    const NAME: &'static str;
+    const COLUMNS: &'static [(&'static str, &'static str)];
 }
 
 pub trait Schema {
-    fn sqls() -> &'static [&'static str];
+    fn create(connection: &mut Connection) -> Result<(), Error>;
 }
 
 impl Schema for () {
-    fn sqls() -> &'static [&'static str] {
-        &[]
+    fn create(_connection: &mut Connection) -> Result<(), Error> {
+        Ok(())
     }
 }
 
 impl<Head: Model, Tail: Schema> Schema for (Head, Tail) {
-    fn sqls() -> &'static [&'static str] {
-        [&[Head::CREATE], Tail::sqls()].concat().leak()
+    fn create(connection: &mut Connection) -> Result<(), Error> {
+        let columns = Head::COLUMNS.iter()
+            .map(|(name, type_)| format!("{} {}", name, type_))
+            .collect::<Vec<_>>()
+            .join(", ");
+
+        connection
+            .execute(&format!("CREATE TABLE IF NOT EXISTS {}({})", Head::NAME, columns), [])
+            .map_err(|err| Error::SchemaError(Box::new(err)))?;
+
+        Tail::create(connection)
     }
 }
 
 #[macro_export]
-macro_rules! models {
+macro_rules! schema {
     [] => { () };
     [$head:ty $(, $tail:ty)* $(,)?] => {
-        ($head, models![$($tail),*])
+        ($head, schema![$($tail),*])
     };
 }
 
