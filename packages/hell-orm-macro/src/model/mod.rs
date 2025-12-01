@@ -1,16 +1,56 @@
-use syn::{Ident, Field, Attribute, Meta, Expr, Lit};
+use syn::{Ident, Type, Field, Attribute, Meta, Expr, Lit};
+use quote::{quote, ToTokens};
 
 
-pub struct Model<'a, T: Iterator<Item = &'a Field>> {
-    fields: T,
+pub struct ColumnField {
+    ident: Option<Ident>,
+    ty: Type,
+}
+
+impl ColumnField {
+    pub fn new(field: Field) -> ColumnField {
+        ColumnField {
+            ident: field.ident,
+            ty: field.ty,
+        }
+    }
+
+    pub fn type_name(&self) -> &str {
+    }
+}
+
+pub struct ColumnFields<'a> {
+    fields: &'a [ColumnField],
+}
+
+impl<'a> ToTokens for ColumnFields<'a> {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        for field in self.fields.iter() {
+            let ident = field.ident.as_ref().map(|ident| ident.to_string());
+
+            tokens.extend(quote! {
+                (#ident, ),
+            });
+        }
+    }
+}
+
+impl<'a> ColumnFields<'a> {
+    pub fn new(fields: &'a [ColumnField]) -> ColumnFields<'a> {
+        ColumnFields {
+            fields,
+        }
+    }
+}
+
+pub struct Column {
     attributes: Vec<Attribute>,
     ident: Ident,
 }
 
-impl<'a, T: Iterator<Item = &'a Field>> Model<'a, T> {
-    pub fn new(fields: T, attributes: Vec<Attribute>, ident: Ident) -> Model<'a, T> {
-        Model {
-            fields,
+impl Column {
+    pub fn new(attributes: Vec<Attribute>, ident: Ident) -> Column {
+        Column {
             attributes,
             ident,
         }

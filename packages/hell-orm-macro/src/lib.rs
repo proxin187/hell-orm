@@ -1,6 +1,6 @@
 mod model;
 
-use model::Model;
+use model::Column;
 
 use proc_macro::TokenStream;
 use quote::quote;
@@ -13,10 +13,10 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
 
     if let Data::Struct(data) = input.data {
         if let Fields::Named(fields) = data.fields {
-            let model = Model::new(fields.named.iter(), input.attrs, input.ident);
+            let column = Column::new(input.attrs, input.ident);
 
-            let ident = model.ident();
-            let table_name = model.table_name();
+            let ident = column.ident();
+            let table_name = column.table_name();
 
             return TokenStream::from(quote! {
                 impl ::hell_orm::model::Model for #ident {
