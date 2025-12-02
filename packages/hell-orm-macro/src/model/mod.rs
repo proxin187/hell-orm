@@ -1,10 +1,22 @@
-use syn::{Ident, Type, Field, Attribute, Meta, Expr, Lit};
+use syn::{Ident, Type, Field, PathArguments, GenericArgument, Attribute, Meta, Expr, Lit};
 use quote::{quote, ToTokens};
 
 
 pub struct ColumnField {
     ident: Option<Ident>,
     ty: Type,
+}
+
+// TODO: we have to learn how to use parse_macro_input instead, this is not a good way, we are
+// essentially parsing it while generating, stupid
+impl ToTokens for ColumnField {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        let ident = self.ident.expect("expected ident");
+
+        tokens.extend(quote! {
+            (#ident, ),
+        });
+    }
 }
 
 impl ColumnField {
@@ -15,7 +27,25 @@ impl ColumnField {
         }
     }
 
-    pub fn type_name(&self) -> &str {
+    fn inner_option_type(&self) -> &Type {
+        if let Type::Path(path) = &self.ty {
+            if let Some(segment) = path.path.segments.last().and_then(|last| (last.ident == "Option").then_some(last)) {
+                if let PathArguments::AngleBracketed(arguments) = &segment.arguments {
+                    if let Some(GenericArgument::Type(ty)) = arguments.args.first() {
+                        return ty;
+                    }
+                }
+            }
+        }
+
+        &self.ty
+    }
+
+    fn raw_type_name(&self) -> &str {
+        match self.inner_option_type().into_token_stream().to_string().as_str() {
+            "String" | "&str" => "TEXT",
+            _ => "TEXT",
+        }
     }
 }
 
