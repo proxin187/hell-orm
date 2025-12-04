@@ -2,28 +2,29 @@ use syn::{Ident, Type, Field, PathArguments, GenericArgument, Attribute, Meta, E
 use quote::{quote, ToTokens};
 
 
-pub struct ColumnField {
-    ident: Option<Ident>,
-    ty: Type,
+pub struct ColumnField<'a> {
+    ident: &'a Option<Ident>,
+    ty: &'a Type,
+    attributes: &'a [Attribute],
 }
 
-// TODO: we have to learn how to use parse_macro_input instead, this is not a good way, we are
-// essentially parsing it while generating, stupid
-impl ToTokens for ColumnField {
+impl<'a> ToTokens for ColumnField<'a> {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
-        let ident = self.ident.expect("expected ident");
+        let ident = self.ident.as_ref().map(|ident| ident.to_string());
+        let ty = self.type_name();
 
         tokens.extend(quote! {
-            (#ident, ),
+            (#ident, #ty),
         });
     }
 }
 
-impl ColumnField {
-    pub fn new(field: Field) -> ColumnField {
+impl<'a> ColumnField<'a> {
+    pub fn new(field: &'a Field) -> ColumnField<'a> {
         ColumnField {
-            ident: field.ident,
-            ty: field.ty,
+            ident: &field.ident,
+            ty: &field.ty,
+            attributes: &field.attrs,
         }
     }
 
@@ -41,34 +42,54 @@ impl ColumnField {
         &self.ty
     }
 
-    fn raw_type_name(&self) -> &str {
+    fn is_option(&self) -> bool {
+        match self.ty {
+            Type::Path(path) => path.path.segments.last().map(|last| last.ident == "Option").unwrap_or_default(),
+            _ => false,
+        }
+    }
+
+    fn raw_type(&self) -> &str {
         match self.inner_option_type().into_token_stream().to_string().as_str() {
             "String" | "&str" => "TEXT",
+            "usize" => "INTEGER",
             _ => "TEXT",
         }
+    }
+
+    fn type_name(&self) -> String {
+        let mut ty = String::new();
+
+        if !self.is_option() {
+            ty.push_str("NOT NULL ");
+        }
+
+        for (ident, attribute_type) in [("primary_key", "PRIMARY KEY "), ("unique", "UNIQUE ")] {
+            if self.attributes.iter().any(|attribute| attribute.path().is_ident(ident)) {
+                ty.push_str(attribute_type);
+            }
+        }
+
+        format!("{} {}", self.raw_type(), ty)
     }
 }
 
 pub struct ColumnFields<'a> {
-    fields: &'a [ColumnField],
+    fields: Vec<ColumnField<'a>>,
 }
 
 impl<'a> ToTokens for ColumnFields<'a> {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         for field in self.fields.iter() {
-            let ident = field.ident.as_ref().map(|ident| ident.to_string());
-
-            tokens.extend(quote! {
-                (#ident, ),
-            });
+            field.to_tokens(tokens);
         }
     }
 }
 
 impl<'a> ColumnFields<'a> {
-    pub fn new(fields: &'a [ColumnField]) -> ColumnFields<'a> {
+    pub fn new(fields: impl Iterator<Item = &'a Field>) -> ColumnFields<'a> {
         ColumnFields {
-            fields,
+            fields: fields.map(|field| ColumnField::new(field)).collect(),
         }
     }
 }

@@ -1,6 +1,6 @@
 mod model;
 
-use model::Column;
+use model::{Column, ColumnFields};
 
 use proc_macro::TokenStream;
 use quote::quote;
@@ -14,6 +14,7 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
     if let Data::Struct(data) = input.data {
         if let Fields::Named(fields) = data.fields {
             let column = Column::new(input.attrs, input.ident);
+            let column_fields = ColumnFields::new(fields.named.iter());
 
             let ident = column.ident();
             let table_name = column.table_name();
@@ -23,6 +24,7 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
                     const NAME: &'static str = #table_name;
 
                     const COLUMNS: &'static [(&'static str, &'static str)] = &[
+                        #column_fields
                     ];
                 }
             });
