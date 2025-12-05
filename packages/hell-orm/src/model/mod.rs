@@ -8,6 +8,8 @@ pub trait Model {
     const COLUMNS: &'static [(&'static str, &'static str)];
 }
 
+pub trait SchemaHas<Row: Model> {}
+
 pub trait Schema {
     fn create(connection: &mut Connection) -> Result<(), Error>;
 }
@@ -31,14 +33,6 @@ impl<Head: Model, Tail: Schema> Schema for (Head, Tail) {
 
         Tail::create(connection)
     }
-}
-
-#[macro_export]
-macro_rules! schema {
-    [] => { () };
-    [$head:ty $(, $tail:ty)* $(,)?] => {
-        ($head, schema![$($tail),*])
-    };
 }
 
 

@@ -21,8 +21,23 @@ pub struct Post {
     content: String,
 }
 
+#[derive(Schema)]
+#[models(User, Post)]
+struct Schema;
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let db = Database::open::<schema![User, Post]>("local.db")?;
+    let mut db: Database<Schema> = Database::open("local.db")?;
+
+    db.insert(User {
+        id: 67,
+        name: String::from("test"),
+    });
+
+    db.insert(Post {
+        id: 67,
+        name: String::from("test"),
+        content: String::from("test"),
+    });
 
     Ok(())
 }
