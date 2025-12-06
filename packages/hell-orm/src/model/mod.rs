@@ -2,7 +2,7 @@
 
 use crate::error::Error;
 
-use rusqlite::Connection;
+use rusqlite::{Connection, Params};
 
 /// A trait representing a database table model.
 ///
@@ -47,6 +47,8 @@ pub trait Model {
     /// Each tuple contains the column name and a SQLite type string with
     /// constraints (e.g., `"INTEGER NOT NULL PRIMARY KEY"`, `"TEXT UNIQUE"`).
     const COLUMNS: &'static [(&'static str, &'static str)];
+
+    fn params(&self) -> impl Params;
 }
 
 /// A marker trait indicating that a schema contains a specific model type.

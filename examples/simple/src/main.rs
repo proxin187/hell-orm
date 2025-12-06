@@ -31,13 +31,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     db.insert(User {
         id: 67,
         name: String::from("test"),
-    });
+    })?;
 
     db.insert(Post {
         id: 67,
         name: String::from("test"),
         content: String::from("test"),
-    });
+    })?;
 
     Ok(())
 }

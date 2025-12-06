@@ -99,10 +99,26 @@ impl<T: Schema> Database<T> {
     ///     name: "Alice".to_string()
     /// });
     /// ```
-    pub fn insert<Row: Model>(&mut self, row: Row)
+    pub fn insert<Row: Model>(&mut self, row: Row) -> Result<usize, Error>
     where
         T: SchemaHas<Row>
     {
+        let names = Row::COLUMNS.iter()
+            .map(|(name, _)| name.to_string())
+            .collect::<Vec<String>>()
+            .join(",");
+
+        let values = Row::COLUMNS.iter()
+            .enumerate()
+            .map(|(index, _)| format!("?{}", index))
+            .collect::<Vec<String>>()
+            .join(",");
+
+        let mut stmt = self.connection.prepare(&format!("INSERT INTO {} ({}) VALUES ({})", Row::NAME, names, values))
+            .map_err(|err| Error::StatementError(Box::new(err)))?;
+
+        stmt.execute(row.params())
+            .map_err(|err| Error::InsertError(Box::new(err)))
     }
 }
 

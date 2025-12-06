@@ -17,6 +17,15 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
             let column = Column::new(input.attrs, input.ident);
             let column_fields = ColumnFields::new(fields.named.iter());
 
+            let params = fields.named.iter()
+                .map(|field| {
+                    let ident = &field.ident;
+
+                    quote! {
+                        self.#ident,
+                    }
+                });
+
             let ident = column.ident();
             let table_name = column.table_name();
 
@@ -27,6 +36,10 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
                     const COLUMNS: &'static [(&'static str, &'static str)] = &[
                         #column_fields
                     ];
+
+                    fn params(&self) -> impl ::hell_orm::__macro_export::rusqlite::Params {
+                        ::hell_orm::__macro_export::rusqlite::params![#(#params)*]
+                    }
                 }
             });
         }
