@@ -49,6 +49,21 @@ pub trait Model {
     const COLUMNS: &'static [(&'static str, &'static str)];
 
     fn params(&self) -> impl Params;
+
+    fn insert_sql() -> String {
+        let names = Self::COLUMNS.iter()
+            .map(|(name, _)| name.to_string())
+            .collect::<Vec<String>>()
+            .join(",");
+
+        let values = Self::COLUMNS.iter()
+            .enumerate()
+            .map(|(index, _)| format!("?{}", index))
+            .collect::<Vec<String>>()
+            .join(",");
+
+        format!("INSERT INTO {} ({}) VALUES ({})", Self::NAME, names, values)
+    }
 }
 
 /// A marker trait indicating that a schema contains a specific model type.

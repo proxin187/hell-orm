@@ -36,6 +36,7 @@
 //! });
 //! ```
 
+pub mod query;
 pub mod model;
 pub mod error;
 
@@ -103,22 +104,17 @@ impl<T: Schema> Database<T> {
     where
         T: SchemaHas<Row>
     {
-        let names = Row::COLUMNS.iter()
-            .map(|(name, _)| name.to_string())
-            .collect::<Vec<String>>()
-            .join(",");
-
-        let values = Row::COLUMNS.iter()
-            .enumerate()
-            .map(|(index, _)| format!("?{}", index))
-            .collect::<Vec<String>>()
-            .join(",");
-
-        let mut stmt = self.connection.prepare(&format!("INSERT INTO {} ({}) VALUES ({})", Row::NAME, names, values))
+        let mut stmt = self.connection.prepare(Row::insert_sql().as_str())
             .map_err(|err| Error::StatementError(Box::new(err)))?;
 
         stmt.execute(row.params())
             .map_err(|err| Error::InsertError(Box::new(err)))
+    }
+
+    pub fn query<Row: Model>(&self)
+    where
+        T: SchemaHas<Row>
+    {
     }
 }
 

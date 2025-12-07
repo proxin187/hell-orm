@@ -22,7 +22,7 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
                     let ident = &field.ident;
 
                     quote! {
-                        self.#ident,
+                        &self.#ident,
                     }
                 });
 
@@ -38,7 +38,7 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
                     ];
 
                     fn params(&self) -> impl ::hell_orm::__macro_export::rusqlite::Params {
-                        ::hell_orm::__macro_export::rusqlite::params![#(#params)*]
+                        (#(#params)*)
                     }
                 }
             });
