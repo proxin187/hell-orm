@@ -4,6 +4,15 @@ use crate::error::Error;
 
 use rusqlite::{Connection, Params};
 
+
+pub trait Insert {
+    type Row: Model;
+
+    fn finish(self) -> Result<(), Error>;
+
+    fn finish_returning(self) -> Result<Self::Row, Error>;
+}
+
 /// A trait representing a database table model.
 ///
 /// Types implementing this trait correspond to database tables and define
@@ -39,6 +48,8 @@ use rusqlite::{Connection, Params};
 /// )
 /// ```
 pub trait Model {
+    type InsertBuilder: Insert;
+
     /// The name of the database table.
     const NAME: &'static str;
 
@@ -47,6 +58,8 @@ pub trait Model {
     /// Each tuple contains the column name and a SQLite type string with
     /// constraints (e.g., `"INTEGER NOT NULL PRIMARY KEY"`, `"TEXT UNIQUE"`).
     const COLUMNS: &'static [(&'static str, &'static str)];
+
+    fn insert_builder() -> Self::InsertBuilder;
 
     fn params(&self) -> impl Params;
 
