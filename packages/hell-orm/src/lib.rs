@@ -36,7 +36,6 @@
 //! });
 //! ```
 
-pub mod query;
 pub mod model;
 pub mod error;
 
@@ -104,11 +103,7 @@ impl<T: Schema> Database<T> {
     where
         T: SchemaHas<Row>
     {
-        let mut stmt = self.connection.prepare(Row::insert_sql().as_str())
-            .map_err(|err| Error::StatementError(Box::new(err)))?;
-
-        stmt.execute(row.params())
-            .map_err(|err| Error::InsertError(Box::new(err)))
+        todo!()
     }
 
     pub fn query<Row: Model>(&self)

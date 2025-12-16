@@ -1,5 +1,8 @@
+mod builder;
+mod typestate;
+
 use syn::{Ident, Type, Field, PathArguments, GenericArgument, Attribute, Meta, Expr, Lit};
-use quote::{quote, ToTokens};
+use quote::{quote, format_ident, ToTokens};
 
 
 pub struct ColumnField<'a> {
@@ -74,6 +77,7 @@ impl<'a> ColumnField<'a> {
     }
 }
 
+
 pub struct ColumnFields<'a> {
     fields: Vec<ColumnField<'a>>,
 }
@@ -110,6 +114,11 @@ impl Column {
     #[inline(always)]
     pub fn ident(&self) -> Ident {
         self.ident.clone()
+    }
+
+    #[inline(always)]
+    pub fn builder_ident(&self) -> Ident {
+        format_ident!("__{}InsertBuilder", self.ident)
     }
 
     pub fn table_name(&self) -> String {

@@ -27,9 +27,20 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
                 });
 
             let ident = column.ident();
+            let builder_ident = column.builder_ident();
             let table_name = column.table_name();
 
             return TokenStream::from(quote! {
+                impl ::hell_orm::model::Insert for #ident {
+                    type Builder<'a> = #builder_ident<'a, ()>;
+
+                    fn builder(connection: &mut ::hell_orm::__macro_export::rusqlite::Connection) -> Self::Builder<'_> {
+                        #builder_ident {
+                            base: ::hell_orm::model::InsertBuilder::new(connection, ()),
+                        }
+                    }
+                }
+
                 impl ::hell_orm::model::Model for #ident {
                     const NAME: &'static str = #table_name;
 
