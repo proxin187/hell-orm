@@ -1,9 +1,11 @@
-mod model;
+mod typestate;
+mod builder;
 
-use model::{Column, ColumnFields};
+use typestate::Typestate;
+use builder::BuilderStructFields;
 
 use proc_macro::TokenStream;
-use quote::quote;
+use quote::{quote, format_ident};
 use syn::{parse_macro_input, Token, DeriveInput, Data, Fields, Type};
 use syn::punctuated::Punctuated;
 
@@ -14,9 +16,11 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
 
     if let Data::Struct(data) = input.data {
         if let Fields::Named(fields) = data.fields {
-            let column = Column::new(input.attrs, input.ident);
-            let column_fields = ColumnFields::new(fields.named.iter());
+            let typestate = Typestate::new(&fields.named, &input.ident);
+            let builder_struct_fields = BuilderStructFields::new(&fields.named);
+            let builder_ident = format_ident!("__{}Builder", input.ident);
 
+            /*
             let params = fields.named.iter()
                 .map(|field| {
                     let ident = &field.ident;
@@ -29,18 +33,18 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
             let ident = column.ident();
             let builder_ident = column.builder_ident();
             let table_name = column.table_name();
+            */
 
             return TokenStream::from(quote! {
-                impl ::hell_orm::model::Insert for #ident {
-                    type Builder<'a> = #builder_ident<'a, ()>;
+                #typestate
 
-                    fn builder(connection: &mut ::hell_orm::__macro_export::rusqlite::Connection) -> Self::Builder<'_> {
-                        #builder_ident {
-                            base: ::hell_orm::model::InsertBuilder::new(connection, ()),
-                        }
-                    }
+                pub struct #builder_ident<'a, T> {
+                    builder: ::hell_orm::model::insert::InsertBuilder<'a, T>,
+
+                    #builder_struct_fields
                 }
 
+                /*
                 impl ::hell_orm::model::Model for #ident {
                     const NAME: &'static str = #table_name;
 
@@ -52,6 +56,7 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
                         (#(#params)*)
                     }
                 }
+                */
             });
         }
     }

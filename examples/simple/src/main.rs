@@ -21,6 +21,7 @@ pub struct Post {
     content: String,
 }
 
+/*
 pub struct __HasPostName<T>(::std::marker::PhantomData<T>);
 pub struct __HasPostContent<T>(::std::marker::PhantomData<T>);
 
@@ -56,6 +57,7 @@ impl<'a, T> __PostBuilder<'a, T> {
         }
     }
 }
+*/
 
 #[derive(Schema)]
 #[models(User, Post)]
