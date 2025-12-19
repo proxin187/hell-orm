@@ -4,9 +4,9 @@ A lightweight, type-safe SQLite ORM for Rust.
 
 ## Why Hell ORM?
 
-- ❌ No async runtime overhead for simple database operations
-- ❌ No complicated migration systems to learn
-- ❌ No excessive dependencies bloating your binary
+- No async runtime overhead for simple database operations
+- No complicated migration systems to learn
+- No excessive dependencies bloating your binary
 
 ## Features
 

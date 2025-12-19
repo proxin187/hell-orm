@@ -1,8 +1,8 @@
 mod typestate;
 mod builder;
 
-use typestate::Typestate;
-use builder::BuilderStructFields;
+use typestate::TypestateStructs;
+use builder::{BuilderStructFields, BuilderStructFinish};
 
 use proc_macro::TokenStream;
 use quote::{quote, format_ident};
@@ -16,9 +16,11 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
 
     if let Data::Struct(data) = input.data {
         if let Fields::Named(fields) = data.fields {
-            let typestate = Typestate::new(&fields.named, &input.ident);
-            let builder_struct_fields = BuilderStructFields::new(&fields.named);
             let builder_ident = format_ident!("__{}Builder", input.ident);
+
+            let typestate_structs = TypestateStructs::new(&fields.named, &input.ident);
+            let builder_struct_fields = BuilderStructFields::new(&fields.named);
+            let builder_struct_finish = BuilderStructFinish::new(&fields.named, &builder_ident, &input.ident);
 
             /*
             let params = fields.named.iter()
@@ -36,13 +38,15 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
             */
 
             return TokenStream::from(quote! {
-                #typestate
+                #typestate_structs
 
                 pub struct #builder_ident<'a, T> {
                     builder: ::hell_orm::model::insert::InsertBuilder<'a, T>,
 
                     #builder_struct_fields
                 }
+
+                #builder_struct_finish
 
                 /*
                 impl ::hell_orm::model::Model for #ident {
