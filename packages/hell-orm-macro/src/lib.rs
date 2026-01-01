@@ -1,12 +1,13 @@
 mod typestate;
 mod builder;
+mod field;
 
 use typestate::TypestateStructs;
-use builder::{BuilderStructFields, BuilderStructFinish};
+use builder::{BuilderStructInit, BuilderStructFields, BuilderStructFunctions, BuilderStructFinish};
 
 use proc_macro::TokenStream;
 use quote::{quote, format_ident};
-use syn::{parse_macro_input, Token, DeriveInput, Data, Fields, Type};
+use syn::{parse_macro_input, Token, DeriveInput, Data, Fields, Type, Meta, Expr, Lit};
 use syn::punctuated::Punctuated;
 
 
@@ -17,36 +18,50 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
     if let Data::Struct(data) = input.data {
         if let Fields::Named(fields) = data.fields {
             let builder_ident = format_ident!("__{}Builder", input.ident);
+            let ident = &input.ident;
+
+            let table_name = input.attrs.iter()
+                .filter_map(|attribute| {
+                    if let Meta::NameValue(value) = &attribute.meta && let Expr::Lit(literal) = &value.value && let Lit::Str(string) = &literal.lit && attribute.path().is_ident("table_name") {
+                        Some(string.value())
+                    } else {
+                        None
+                    }
+                })
+                .next();
 
             let typestate_structs = TypestateStructs::new(&fields.named, &input.ident);
+            let builder_struct_init = BuilderStructInit::new(&fields.named);
             let builder_struct_fields = BuilderStructFields::new(&fields.named);
+            let builder_struct_functions = BuilderStructFunctions::new(&fields.named, &builder_ident, &input.ident);
             let builder_struct_finish = BuilderStructFinish::new(&fields.named, &builder_ident, &input.ident);
-
-            /*
-            let params = fields.named.iter()
-                .map(|field| {
-                    let ident = &field.ident;
-
-                    quote! {
-                        &self.#ident,
-                    }
-                });
-
-            let ident = column.ident();
-            let builder_ident = column.builder_ident();
-            let table_name = column.table_name();
-            */
 
             return TokenStream::from(quote! {
                 #typestate_structs
 
                 pub struct #builder_ident<'a, T> {
-                    builder: ::hell_orm::model::insert::InsertBuilder<'a, T>,
+                    builder: ::hell_orm::schema::insert::InsertBuilder<'a, T>,
 
                     #builder_struct_fields
                 }
 
+                impl<'a, T> #builder_ident<'a, T> {
+                    #builder_struct_functions
+                }
+
                 #builder_struct_finish
+
+                impl<'a, T> ::hell_orm::schema::insert::Insert<'a, T> for #ident {
+                    type Builder = #builder_ident<'a, ()>;
+
+                    fn builder(connection: &'a mut ::hell_orm::__macro_export::rusqlite::Connection) -> <Self as ::hell_orm::schema::insert::Insert<'a, T>>::Builder {
+                        #builder_ident {
+                            builder: ::hell_orm::schema::insert::InsertBuilder::new(connection, #table_name, ()),
+
+                            #builder_struct_init
+                        }
+                    }
+                }
 
                 /*
                 impl ::hell_orm::model::Model for #ident {
@@ -84,15 +99,15 @@ pub fn derive_schema(input: TokenStream) -> TokenStream {
             };
 
             let schema_has = models.iter().map(|model| quote! {
-                impl ::hell_orm::model::SchemaHas<#model> for #ident {}
+                impl<'a> ::hell_orm::schema::SchemaHas<'a, #model> for #ident {}
             });
 
             let schema_tuple = models.iter().rev().fold(quote! {()}, |acc, model| quote! { (#model, #acc) });
 
             return TokenStream::from(quote! {
-                impl ::hell_orm::model::Schema for #ident {
+                impl ::hell_orm::schema::Schema for #ident {
                     fn create(connection: &mut ::hell_orm::__macro_export::rusqlite::Connection) -> Result<(), ::hell_orm::error::Error> {
-                        <#schema_tuple as ::hell_orm::model::Schema>::create(connection)
+                        <#schema_tuple as ::hell_orm::schema::Schema>::create(connection)
                     }
                 }
 
