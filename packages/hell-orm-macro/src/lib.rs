@@ -1,13 +1,15 @@
 mod typestate;
 mod builder;
 mod field;
+mod model;
 
+use model::Model;
 use typestate::TypestateStructs;
 use builder::{BuilderStructInit, BuilderStructFields, BuilderStructFunctions, BuilderStructFinish};
 
 use proc_macro::TokenStream;
 use quote::{quote, format_ident};
-use syn::{parse_macro_input, Token, DeriveInput, Data, Fields, Type, Meta, Expr, Lit};
+use syn::{parse_macro_input, Token, DeriveInput, Data, Fields, Type};
 use syn::punctuated::Punctuated;
 
 
@@ -20,21 +22,14 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
             let builder_ident = format_ident!("__{}Builder", input.ident);
             let ident = &input.ident;
 
-            let table_name = input.attrs.iter()
-                .filter_map(|attribute| {
-                    if let Meta::NameValue(value) = &attribute.meta && let Expr::Lit(literal) = &value.value && let Lit::Str(string) = &literal.lit && attribute.path().is_ident("table_name") {
-                        Some(string.value())
-                    } else {
-                        None
-                    }
-                })
-                .next();
-
             let typestate_structs = TypestateStructs::new(&fields.named, &input.ident);
+            let model_impl = Model::new(&fields.named, input.attrs);
             let builder_struct_init = BuilderStructInit::new(&fields.named);
             let builder_struct_fields = BuilderStructFields::new(&fields.named);
             let builder_struct_functions = BuilderStructFunctions::new(&fields.named, &builder_ident, &input.ident);
             let builder_struct_finish = BuilderStructFinish::new(&fields.named, &builder_ident, &input.ident);
+
+            let table_name = model_impl.table_name();
 
             return TokenStream::from(quote! {
                 #typestate_structs
@@ -63,19 +58,9 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
                     }
                 }
 
-                /*
-                impl ::hell_orm::model::Model for #ident {
-                    const NAME: &'static str = #table_name;
-
-                    const COLUMNS: &'static [(&'static str, &'static str)] = &[
-                        #column_fields
-                    ];
-
-                    fn params(&self) -> impl ::hell_orm::__macro_export::rusqlite::Params {
-                        (#(#params)*)
-                    }
+                impl<'a, T> ::hell_orm::schema::Model<'a, T> for #ident {
+                    #model_impl
                 }
-                */
             });
         }
     }

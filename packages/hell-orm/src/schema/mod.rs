@@ -7,12 +7,14 @@ use crate::error::Error;
 
 use insert::Insert;
 
-use rusqlite::{Connection, Params};
+use rusqlite::Connection;
 
 
-pub trait Model<'a, T>: Insert<'a, T> {}
+pub trait Model<'a, T>: Insert<'a, T> {
+    const NAME: &'static str;
 
-impl<'a, T: Insert<'a, T>> Model<'a, T> for T {}
+    const COLUMNS: &'static [(&'static str, &'static str)];
+}
 
 pub trait SchemaHas<'a, Row: Model<'a, Row>> {}
 
@@ -28,7 +30,6 @@ impl Schema for () {
 
 impl<Head: for <'a> Model<'a, Head>, Tail: Schema> Schema for (Head, Tail) {
     fn create(connection: &mut Connection) -> Result<(), Error> {
-        /*
         let columns = Head::COLUMNS.iter()
             .map(|(name, type_)| format!("{} {}", name, type_))
             .collect::<Vec<_>>()
@@ -39,9 +40,6 @@ impl<Head: for <'a> Model<'a, Head>, Tail: Schema> Schema for (Head, Tail) {
             .map_err(|err| Error::SchemaError(Box::new(err)))?;
 
         Tail::create(connection)
-        */
-
-        Ok(())
     }
 }
 
