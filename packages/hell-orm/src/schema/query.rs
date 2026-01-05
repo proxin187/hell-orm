@@ -1,15 +1,37 @@
 use crate::schema::Model;
 
-use std::marker::PhantomData;
-
 use rusqlite::Connection;
 
 
-/*
-pub struct QueryBuilder<'a, Row: Model> {
-    connection: &'a Connection,
-    _marker: PhantomData<Row>,
+pub enum Where<T> {
+    Equal(T),
+    NotEqual(T),
+    LessThan(T),
+    GreaterThan(T),
 }
-*/
+
+pub trait Query<'a, T> {
+    type Builder;
+
+    fn builder(connection: &'a mut Connection) -> Self::Builder;
+}
+
+pub struct QueryBuilder<'a> {
+    pub connection: &'a mut Connection,
+    pub table_name: &'a str,
+}
+
+impl<'a> QueryBuilder<'a> {
+    pub fn new(connection: &'a mut Connection, table_name: &'a str) -> QueryBuilder<'a> {
+        QueryBuilder {
+            connection,
+            table_name,
+        }
+    }
+
+    // TODO: we need a get() and all() function for retrieving single values and multiple values
+    fn finish(self) {
+    }
+}
 
 

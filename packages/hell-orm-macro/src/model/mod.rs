@@ -1,4 +1,5 @@
 use syn::punctuated::Punctuated;
+use syn::spanned::Spanned;
 use syn::{Token, Field, Attribute, Type, Meta, Expr, Lit, PathArguments, GenericArgument};
 use quote::{quote, ToTokens};
 
@@ -34,8 +35,15 @@ impl<'a> Model<'a> {
                 let name = field.ident.as_ref().map(|ident| ident.to_string());
                 let sqlite_type = FieldType::new(&field).sqlite_type();
 
-                quote! {
-                    (#name, #sqlite_type)
+                match sqlite_type {
+                    Ok(ty) => {
+                        quote! { (#name, #ty) }
+                    },
+                    Err(err) => {
+                        let error = err.to_compile_error();
+
+                        quote! { #error }
+                    },
                 }
             })
     }
@@ -79,16 +87,17 @@ impl<'a> FieldType<'a> {
         &self.field.ty
     }
 
-    fn raw_type(&self) -> &'a str {
-        match self.inner_option_type().to_token_stream().to_string().as_str() {
-            "String" => "TEXT",
-            "u8" | "u16" | "u32" | "u64"| "u128" | "usize" | "i8" | "i16" | "i32" | "i64"| "i128" | "isize" => "INTEGER",
-            // TODO: make it error here
-            _ => "TEXT",
+    fn raw_type(&self) -> Result<&'a str, syn::Error> {
+        let ty = self.inner_option_type().to_token_stream();
+
+        match ty.to_string().as_str() {
+            "String" => Ok("TEXT"),
+            "u8" | "u16" | "u32" | "u64"| "u128" | "usize" | "i8" | "i16" | "i32" | "i64"| "i128" | "isize" => Ok("INTEGER"),
+            _ => Err(syn::Error::new(ty.span(), "Invalid type in field")),
         }
     }
 
-    fn sqlite_type(&self) -> String {
+    fn sqlite_type(&self) -> Result<String, syn::Error> {
         let mut attributes = if let Type::Path(path) = &self.field.ty && path.path.segments.last().map(|last| last.ident == "Option").unwrap_or_default() {
             String::from(" NOT NULL")
         } else {
@@ -101,7 +110,7 @@ impl<'a> FieldType<'a> {
             }
         }
 
-        format!("{}{}", self.raw_type(), attributes)
+        self.raw_type().map(|ty| format!("{}{}", ty, attributes))
     }
 }
 

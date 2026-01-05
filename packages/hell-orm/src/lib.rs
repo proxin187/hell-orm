@@ -2,6 +2,7 @@ pub mod schema;
 pub mod error;
 
 use crate::schema::insert::Insert;
+use crate::schema::query::Query;
 use crate::schema::{Model, Schema, SchemaHas};
 use crate::error::Error;
 
