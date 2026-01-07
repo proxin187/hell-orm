@@ -1,32 +1,22 @@
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
-use syn::{Token, Field, Attribute, Type, Meta, Expr, Lit, PathArguments, GenericArgument};
+use syn::{Token, Field, Attribute, Type, PathArguments, GenericArgument};
 use quote::{quote, ToTokens};
 
 
 pub struct Model<'a> {
     fields: &'a Punctuated<Field, Token![,]>,
-    attributes: Vec<Attribute>,
+    attributes: &'a [Attribute],
+    table_name: &'a str,
 }
 
 impl<'a> Model<'a> {
-    pub fn new(fields: &'a Punctuated<Field, Token![,]>, attributes: Vec<Attribute>) -> Model<'a> {
+    pub fn new(fields: &'a Punctuated<Field, Token![,]>, attributes: &'a [Attribute], table_name: &'a str) -> Model<'a> {
         Model {
             fields,
             attributes,
+            table_name,
         }
-    }
-
-    pub fn table_name(&self) -> Option<String> {
-        self.attributes.iter()
-            .filter_map(|attribute| {
-                if let Meta::NameValue(value) = &attribute.meta && let Expr::Lit(literal) = &value.value && let Lit::Str(string) = &literal.lit && attribute.path().is_ident("table_name") {
-                    Some(string.value())
-                } else {
-                    None
-                }
-            })
-            .next()
     }
 
     pub fn columns(&self) -> impl Iterator<Item = proc_macro2::TokenStream> {
@@ -51,7 +41,7 @@ impl<'a> Model<'a> {
 
 impl<'a> ToTokens for Model<'a> {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
-        let table_name = self.table_name();
+        let table_name = &self.table_name;
         let columns = self.columns();
 
         tokens.extend(quote! {

@@ -1,4 +1,4 @@
-use crate::field::ModelField;
+use super::field::ModelField;
 
 use syn::punctuated::Punctuated;
 use syn::{Token, Ident, Field};

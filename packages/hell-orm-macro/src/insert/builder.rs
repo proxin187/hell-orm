@@ -1,5 +1,5 @@
-use crate::typestate::TypestateCheck;
-use crate::field::ModelField;
+use super::typestate::TypestateCheck;
+use super::field::ModelField;
 
 use syn::punctuated::Punctuated;
 use syn::{Token, Ident, Field, Type};
