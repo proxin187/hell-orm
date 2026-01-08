@@ -52,10 +52,10 @@ impl<'a> ToTokens for Insert<'a> {
 
             #builder_struct_finish
 
-            impl<'a, T> ::hell_orm::schema::insert::Insert<'a, T> for #ident {
-                type Builder = #builder_ident<'a, ()>;
+            impl ::hell_orm::schema::insert::Insert for #ident {
+                type Builder<'a> = #builder_ident<'a, ()>;
 
-                fn builder(connection: &'a mut ::hell_orm::__macro_export::rusqlite::Connection) -> <Self as ::hell_orm::schema::insert::Insert<'a, T>>::Builder {
+                fn builder<'a>(connection: &'a mut ::hell_orm::__macro_export::rusqlite::Connection) -> <Self as ::hell_orm::schema::insert::Insert>::Builder<'a> {
                     #builder_ident {
                         builder: ::hell_orm::schema::insert::InsertBuilder::new(connection, #table_name, ()),
 

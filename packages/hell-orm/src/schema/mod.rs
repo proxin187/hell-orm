@@ -10,13 +10,13 @@ use insert::Insert;
 use rusqlite::Connection;
 
 
-pub trait Model<'a, T>: Insert<'a, T> {
+pub trait Model: Insert {
     const NAME: &'static str;
 
     const COLUMNS: &'static [(&'static str, &'static str)];
 }
 
-pub trait SchemaHas<'a, Row: Model<'a, Row>> {}
+pub trait SchemaHas<Row: Model> {}
 
 pub trait Schema {
     fn create(connection: &mut Connection) -> Result<(), Error>;
@@ -28,7 +28,7 @@ impl Schema for () {
     }
 }
 
-impl<Head: for <'a> Model<'a, Head>, Tail: Schema> Schema for (Head, Tail) {
+impl<Head: Model, Tail: Schema> Schema for (Head, Tail) {
     fn create(connection: &mut Connection) -> Result<(), Error> {
         let columns = Head::COLUMNS.iter()
             .map(|(name, type_)| format!("{} {}", name, type_))

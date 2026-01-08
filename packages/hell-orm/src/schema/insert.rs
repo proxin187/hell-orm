@@ -3,10 +3,10 @@ use crate::error::Error;
 use rusqlite::{Connection, Params};
 
 
-pub trait Insert<'a, T> {
-    type Builder;
+pub trait Insert {
+    type Builder<'a>;
 
-    fn builder(connection: &'a mut Connection) -> Self::Builder;
+    fn builder<'a>(connection: &'a mut Connection) -> Self::Builder<'a>;
 }
 
 pub struct InsertBuilder<'a, T> {

@@ -30,8 +30,8 @@ impl<'a> QueryBuilder<'a> {
     }
 
     // TODO: we need a get() and all() function for retrieving single values and multiple values
-    fn finish(self) {
-    }
+    //fn get<T: Model<'a>>(self) -> &'a T {
+    //}
 }
 
 

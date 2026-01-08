@@ -1,8 +1,10 @@
 mod insert;
+mod query;
 mod model;
 
-use model::Model;
 use insert::Insert;
+use query::Query;
+use model::Model;
 
 use proc_macro::TokenStream;
 use quote::quote;
@@ -36,12 +38,15 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
             let ident = &input.ident;
 
             let insert = Insert::new(&input, &fields, &table_name);
+            let query = Query::new(&input, &fields);
             let model = Model::new(&fields.named, &input.attrs, &table_name);
 
             return TokenStream::from(quote! {
                 #insert
 
-                impl<'a, T> ::hell_orm::schema::Model<'a, T> for #ident {
+                #query
+
+                impl ::hell_orm::schema::Model for #ident {
                     #model
                 }
             });
@@ -67,7 +72,7 @@ pub fn derive_schema(input: TokenStream) -> TokenStream {
             };
 
             let schema_has = models.iter().map(|model| quote! {
-                impl<'a> ::hell_orm::schema::SchemaHas<'a, #model> for #ident {}
+                impl ::hell_orm::schema::SchemaHas<#model> for #ident {}
             });
 
             let schema_tuple = models.iter().rev().fold(quote! {()}, |acc, model| quote! { (#model, #acc) });

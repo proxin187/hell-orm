@@ -28,11 +28,11 @@ impl<T: Schema> Database<T> {
         })
     }
 
-    pub fn insert<'a, Row: Model<'a, Row>>(&'a mut self) -> <Row as Insert<'a, Row>>::Builder
+    pub fn insert<'a, Row: Model>(&'a mut self) -> <Row as Insert>::Builder<'a>
     where
-        T: SchemaHas<'a, Row>
+        T: SchemaHas<Row>
     {
-        <Row as Insert<'a, Row>>::builder(&mut self.connection)
+        <Row as Insert>::builder(&mut self.connection)
     }
 
     /*
