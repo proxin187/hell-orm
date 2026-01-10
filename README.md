@@ -10,8 +10,8 @@ A lightweight, type-safe SQLite ORM for Rust.
 
 ## Roadmap
 - [X] Database schema creation
-- [X] Database insert with builder notation
-- [ ] Database query, update and delete with builder notation
+- [X] Database insert with builder pattern
+- [ ] Database query, update and delete with builder pattern
 
 ## License
 Hell ORM is licensed under the MIT license.
